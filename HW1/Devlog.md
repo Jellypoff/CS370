@@ -1,0 +1,1 @@
+This was my first experience with Claude Code and fully AI driven development. I want to improve on my prompts and be better with contracts with claude.

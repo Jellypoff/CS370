@@ -1,6 +1,25 @@
 Red Black Tree
 -Every node is a seperatly allocated heap object attatched to its neighbors by pointers
 
+Required Functions
+rb_create
+rb_insert
+rb_find
+rb_delete
+rb_size
+rb_foreach
+rb_validate
+rb_destroy
+
+Compile with:
+-std=c23
+-Wall -Wextra -Werror
+
+Required verification:
+make test
+make asan
+make memcheck
+
 
 Learning objectives 
 • Read and write enough C to build a pointer-linked data structure, and know at every moment
@@ -37,3 +56,14 @@ will actually hurt you here, for three reasons: (a) the targeted deletion tests 
 punish code nobody reviewed, (b) part of your grade comes from your process artifacts and a live
 walkthrough, and (c) you will be asked to explain arbitrary lines of your submission (live), and to
 extend it on parameters you have never seen.
+
+
+Before each milestone commit, get a review from a context that did not write the code, because
+a reviewer that shares the author’s assumptions inherits its blind spots. Either run the bundled
+/code-review skill, or /clear and prompt:
+Review the diff for Milestone 2 as a hostile kernel reviewer. Hunt specifically for: a use-afterfree in the successor splice, a key copy leaked on the overwrite path, allocations whose NULL
+return is never checked, and any path where rb_destroy can miss a subtree. Report findings with
+file:line; do not fix anything.
+
+Confusions list:
+Read include /rbtree.h and CLAUDE.md. Walk me through a left rotation, one pointer assignment at a time. For each pointer, explain what it pointed to before and after.
