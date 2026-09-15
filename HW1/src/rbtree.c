@@ -52,6 +52,91 @@ rbtree_t *rb_create(rb_value_free_fn value_free)
 	return t;
 }
 
+static void rb_rotate_left(rbtree_t *t, rbnode_t *x)
+{
+	rbnode_t *y = x->right;
+
+	x->right = y->left;
+	if (y->left != &t->nil) {
+		y->left->parent = x;
+	}
+
+	y->parent = x->parent;
+	if (x->parent == &t->nil) {
+		t->root = y;
+	} else if (x == x->parent->left) {
+		x->parent->left = y;
+	} else {
+		x->parent->right = y;
+	}
+
+	y->left = x;
+	x->parent = y;
+}
+
+static void rb_rotate_right(rbtree_t *t, rbnode_t *y)
+{
+	rbnode_t *x = y->left;
+
+	y->left = x->right;
+	if (x->right != &t->nil) {
+		x->right->parent = y;
+	}
+
+	x->parent = y->parent;
+	if (y->parent == &t->nil) {
+		t->root = x;
+	} else if (y == y->parent->right) {
+		y->parent->right = x;
+	} else {
+		y->parent->left = x;
+	}
+
+	x->right = y;
+	y->parent = x;
+}
+
+static void rb_insert_fixup(rbtree_t *t, rbnode_t *z)
+{
+	/* invariant: z is red, and z is the only red-red violation in the tree */
+	while (z->parent->color == RB_RED) {
+		if (z->parent == z->parent->parent->left) {
+			rbnode_t *y = z->parent->parent->right;
+			if (y->color == RB_RED) {
+				z->parent->color = RB_BLACK;
+				y->color = RB_BLACK;
+				z->parent->parent->color = RB_RED;
+				z = z->parent->parent;
+			} else {
+				if (z == z->parent->right) {
+					z = z->parent;
+					rb_rotate_left(t, z);
+				}
+				z->parent->color = RB_BLACK;
+				z->parent->parent->color = RB_RED;
+				rb_rotate_right(t, z->parent->parent);
+			}
+		} else {
+			rbnode_t *y = z->parent->parent->left;
+			if (y->color == RB_RED) {
+				z->parent->color = RB_BLACK;
+				y->color = RB_BLACK;
+				z->parent->parent->color = RB_RED;
+				z = z->parent->parent;
+			} else {
+				if (z == z->parent->left) {
+					z = z->parent;
+					rb_rotate_right(t, z);
+				}
+				z->parent->color = RB_BLACK;
+				z->parent->parent->color = RB_RED;
+				rb_rotate_left(t, z->parent->parent);
+			}
+		}
+	}
+	t->root->color = RB_BLACK;
+}
+
 int rb_insert(rbtree_t *t, const char *key, void *value)
 {
 	rbnode_t *parent = &t->nil;
@@ -97,6 +182,7 @@ int rb_insert(rbtree_t *t, const char *key, void *value)
 		parent->right = node;
 	}
 
+	rb_insert_fixup(t, node);
 	t->size++;
 	return 0;
 
