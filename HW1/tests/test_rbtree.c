@@ -181,6 +181,71 @@ static void test_stale_root_right_left_zigzag(void)
 	printf("test_stale_root_right_left_zigzag passed\n");
 }
 
+static void test_validate_empty_tree(void)
+{
+	rbtree_t *t = rb_create(NULL);
+	assert(t != NULL);
+
+	assert(rb_validate(t) == 0);
+
+	rb_destroy(t);
+	printf("test_validate_empty_tree passed\n");
+}
+
+static void test_validate_single_insert(void)
+{
+	rbtree_t *t = rb_create(count_free);
+	assert(t != NULL);
+
+	assert(rb_insert(t, "only", make_int(1)) == 0);
+	assert(rb_validate(t) == 0);
+
+	rb_destroy(t);
+	printf("test_validate_single_insert passed\n");
+}
+
+static void test_validate_after_rotations(void)
+{
+	static const char *sequences[][3] = {
+		{ "a", "b", "c" },
+		{ "c", "b", "a" },
+		{ "c", "a", "b" },
+		{ "a", "c", "b" },
+	};
+
+	/* invariant: every sequence inserted so far has left the tree valid */
+	for (size_t s = 0; s < sizeof sequences / sizeof sequences[0]; s++) {
+		rbtree_t *t = rb_create(count_free);
+		assert(t != NULL);
+
+		for (size_t i = 0; i < 3; i++) {
+			assert(rb_insert(t, sequences[s][i], make_int((int)i)) == 0);
+			assert(rb_validate(t) == 0);
+		}
+
+		rb_destroy(t);
+	}
+	printf("test_validate_after_rotations passed\n");
+}
+
+static void test_validate_ascending_run(void)
+{
+	static const char *keys[] = { "a", "b", "c", "d", "e", "f", "g",
+				       "h", "i", "j", "k", "l", "m" };
+	rbtree_t *t = rb_create(count_free);
+	assert(t != NULL);
+
+	/* invariant: after each insert of a strictly increasing key, the
+	 * tree is still a valid red-black tree */
+	for (size_t i = 0; i < sizeof keys / sizeof keys[0]; i++) {
+		assert(rb_insert(t, keys[i], make_int((int)i)) == 0);
+		assert(rb_validate(t) == 0);
+	}
+
+	rb_destroy(t);
+	printf("test_validate_ascending_run passed\n");
+}
+
 int main(void)
 {
 	test_create_destroy();
@@ -192,6 +257,10 @@ int main(void)
 	test_stale_root_right_rotation();
 	test_stale_root_left_right_zigzag();
 	test_stale_root_right_left_zigzag();
+	test_validate_empty_tree();
+	test_validate_single_insert();
+	test_validate_after_rotations();
+	test_validate_ascending_run();
 	printf("All tests passed\n");
 	return 0;
 }

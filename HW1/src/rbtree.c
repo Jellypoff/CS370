@@ -212,6 +212,52 @@ size_t rb_size(const rbtree_t *t)
 	return t->size;
 }
 
+/* invariant: subtree at node is a valid RB-tree with all keys in (lo, hi),
+ * else return 0; on success *black_height is the subtree's black-height */
+static int rb_validate_rec(const rbtree_t *t, const rbnode_t *node,
+			    const char *lo, const char *hi, int *black_height)
+{
+	if (node == &t->nil) {
+		*black_height = 0;
+		return 1;
+	}
+	if ((lo != NULL && strcmp(node->key, lo) <= 0) ||
+	    (hi != NULL && strcmp(node->key, hi) >= 0)) {
+		return 0;
+	}
+	if (node->color == RB_RED &&
+	    (node->left->color == RB_RED || node->right->color == RB_RED)) {
+		return 0;
+	}
+	if ((node->left != &t->nil && node->left->parent != node) ||
+	    (node->right != &t->nil && node->right->parent != node)) {
+		return 0;
+	}
+
+	int bh_left, bh_right;
+	if (!rb_validate_rec(t, node->left, lo, node->key, &bh_left)) {
+		return 0;
+	}
+	if (!rb_validate_rec(t, node->right, node->key, hi, &bh_right)) {
+		return 0;
+	}
+	if (bh_left != bh_right) {
+		return 0;
+	}
+
+	*black_height = bh_left + (node->color == RB_BLACK ? 1 : 0);
+	return 1;
+}
+
+int rb_validate(const rbtree_t *t)
+{
+	if (t->root != &t->nil && t->root->color != RB_BLACK) {
+		return 1;
+	}
+	int black_height;
+	return rb_validate_rec(t, t->root, NULL, NULL, &black_height) ? 0 : 1;
+}
+
 static void free_subtree(rbtree_t *t, rbnode_t *node)
 {
 	if (node == &t->nil) {
