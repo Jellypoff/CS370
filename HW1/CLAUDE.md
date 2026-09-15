@@ -4,12 +4,15 @@
 - Sanitizers: ‘make asan‘ Valgrind: ‘make memcheck‘
 - A change is DONE only when all three pass. Always run them; show output.
 - Always start sessions in plan mode
+- route all allocation in src/rbtree.c 
 ## Hard constraints
 - NEVER modify include/rbtree.h. It is the graded contract.
 - Check every allocation. malloc can return NULL; a NULL return must
 leave the tree unchanged and return the documented error code.
 - NEVER weaken, skip, or delete a test to make the suite pass. If a test
 looks wrong, stop and explain why instead.
+- make the smallest change that passes; do not refactor unrelated code.
+- fuzzer agrees with a reference model across ≥ 10^5 operations.
 ## Style
 - C23. -Wall -Wextra -Werror must stay clean. No VLAs.
 - Error handling: goto-cleanup pattern for multi-allocation functions.

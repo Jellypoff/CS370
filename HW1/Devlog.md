@@ -1,1 +1,3 @@
 This was my first experience with Claude Code and fully AI driven development. I want to improve on my prompts and be better with contracts with claude.
+
+This is evening 2 and Claude automatically answered the parent-pointer question with this "I'm including parent now even though today's insert has no fixup, since rotations/fixup in a later milestone need it and retrofitting it later would touch every node-creation site again." It also explained everything well specifically with the functions. I was a little confused on what Claude was doing for rb_insert. There was a note in the spec document that said routing all allocation in src/rbtree.c would help for hw2 and thats why it made an internal dup_key helper. 
