@@ -21,7 +21,7 @@ M1- rotations, stale-root regression testing, and insert_fixup.
 Prompt:  Implement the rotations own t->root and the stale-root regression test. Build on rbtree.c, fuzz.c, and test_rbtree.c. Walk me through your implementation.
 
 Notes:
-Claude asked me how I wanted to do tests. It asked me if I wanted to use whitebox testing, but I was more familiar with blackbox testing. This was an oversight on my part.  I also told Claude to pull insert_fixup forward into this part of milestone 1. This made more sense to me because it kept everything black-box. This made everything more simple at this time so no new files or significant changes were made, other than the code of course. Claude explained the tests it was going to add but I wanted more explanation as to why it chose the tests and how they correlated to stale-root regression.
+Claude asked me how I wanted to do tests. It asked me if I wanted to use whitebox testing, but I was more familiar with blackbox testing. This was an oversight on my part, because I didn't specify how I wanted my tests to look. I also told Claude to pull insert_fixup forward into this part of milestone 1. This made more sense to me because it kept everything black-box. This made everything more simple at this time so no new files or significant changes were made, other than the code of course. Claude explained the tests it was going to add but I wanted more explanation as to why it chose the tests and how they correlated to stale-root regression.
 
 Prompt: Start working on insert_fixup + mirrors and validate checks black-height. insert_fixup was already implemented but update it with mirrors now. Build on what is in rbtree.c and in the tests directory.
 
@@ -38,11 +38,6 @@ Prompt: Write the failing table-driven tests for rb_delete first: red leaf, blac
 Notes: This prompt was out of the spec. Some key things it told me was that rbnode is fully opaque outside and that there was no way for test code to inspect node color or shape directly so hitting a specific strucutral case meant picking the right insertion order for rb_insert. It gave me some steps and started with step 1 which was to verify the mirror tree shape empirically.
 
 episode 5
-Prompt: Lets start working on the last parts of m2. Walk me through your implementation and how it connects to the other steps of m2. 
-
-Notes: I wanted to see if there were any glaring issues that I wasn't seeing or any edge cases that weren't being covered. I looked through my code and I didn't see anything wrong.
-
-episode 6
 prompt: Lets start working on M3: fuzzer with deletes, 1e5 ops, asan+memcheck clean. I want you to add focused, deterministic tests for these three M3 edge cases:
 1. Empty tree
 2. Single-node tree
@@ -51,7 +46,11 @@ Use the existing test conventions and helper functions in the repository. Do not
 
 Notes: Throughout this whole process of learning prompts, I've really only done a couple of sentences because I thought that was efficient and saved tokens. For this last stretch of hw1 I wanted to make very detailed prompts and make sure that Claude wasn't fixing things that didn't need to be fixed or making extra unnessecary code. Claude made tests to test_rbtree.c that followed the style of the other ones and gave me what I wanted. After the tests were implemented, I asked Claude to review the tests and explain what behavior its checking and why that specific behavior is required by the spec.
 
-PROMPTLOG.md: 4–6 annotated episodes, each with the prompt, what came back, and your
-judgment (accepted, rejected, or pushed back on, and why). Must include one plan you revised(done)
-(Step 3), one rejected/oversized diff(done) (Step 4), one tool-output debugging loop (Step 5), and one review finding you triaged (Step 7). Raw transcript dumps here score nothing; annotation is the
-deliverable.
+Episode 6
+
+prompt: run an adversarial code review. Look for these bug families:  a use-after-free in the successor splice, a key copy leaked on the overwrite path, an allocation whose NULL return nobody checks.
+
+Notes: Ran this prompt in a fresh context and let Claude access the whole directory. Claude said none of the bugs were present, but I gave it some push back.
+False positive: There is this sentence, "Not present. Z is only read(never written after free) up until free(z->key); free(z) at the very end, after rb_delete_fixup has already run." I want it to tell me if any pointer still used by rb_fixup points into z after it is read. After seeing this, I asked it to demonstrate the pointer lifetime rather than just declaring it safe. Claude said asking that question was good and sharp--I thought that was funny. It then demonstrated how the call to rb_delete_fixup and the freeing of z are strictly ordered by the program and not concurrent. Z is also unreachable before fixup starts. It also said that the question I'm really asking is  "does fixup's pointer-walk (x, x->parent, sibling w, w->left, w->right, ...) ever land on z's address?", which is accurate. It explained it well and showed me in more depth why there are no use-after-free bugs with code snippets specifically that rb_delete_fixup runs to completion before z's memory is freed and showed me how a typical user-after-free bug looks.
+
+Real finding: It was pretty difficult to find a real finding. I asked Claude " Your first review found no bugs. Do a second, more adversarial pass. For each of the three bug families, trace the exact execution path and identify a concrete input/operation sequence that would trigger the bug if it exists. Do not report a finding unless you can point to the exact lines, explain the lifetime/ownership violation, and give a minimal reproducer. Pay particular attention to error paths, duplicate-key insertion, two-child deletion, and the interaction between t->nil, x->parent, and free()." and it stress-tested this empirically rather than just re-asserting static analysis. After doing this it couldn't find anything and then I asked it " I need you to find one concrete, reproducible real bug if one exists. Do not invent or speculate about a finding." It broadened the search beyond the original three big families with a large randomized differential fuzzer. After doing all of this it still couldn't find a bug and make test, make asan and make memcheck all still ran with all tests passed.

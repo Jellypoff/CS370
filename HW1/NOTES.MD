@@ -110,3 +110,5 @@ file:line; do not fix anything.
 
 Confusions list:
 Read include /rbtree.h and CLAUDE.md. Walk me through a left rotation, one pointer assignment at a time. For each pointer, explain what it pointed to before and after.
+Continue the poisoned-free and malloc-failure-injection probe you just started.
+

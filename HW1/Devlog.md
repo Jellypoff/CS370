@@ -8,5 +8,7 @@ This is the equivalent of evening 3. I forgot to run the predict-then-scroll-dri
 2026-9-15
 Evening 4 ~3hours
 I started this session with clearing the session and starting with a new session for M2. I gave it a little too much control and let it do multiple steps in one session. There are 4 parts to m1 and m2 and I wanted to make each prompt do one part of a milestone. This session/prompt got up to 3 parts of m2. This doesn't mean that I wasn't asking Claude questions though and I was actively green lighting it. I also asked it to clarify roughly how many parts of M2 we were through and then what it had done and to walk me through all of it. At this point in my code I am almost done with m2 and I going to start M3 with fuzzer driving delete, 1e5 ops, and asan+memcheck clean.
+
 2026-9-16
-Evening 5
+Evening 5 ~2hours
+This session was my best I think. I finished M3 and I got my Claude coding done. M3 was a little confusing because I wanted to get the fuzzer done and I didn't want Claude to jump the gun on anything. There was more pushback on my end for Claude. I wanted it to simulate a lot of tests ot make sure their were no bugs. I also thought my prompts were way better in that they were specific and more efficient. The last things I am working on are this devlog and my deliverables.
