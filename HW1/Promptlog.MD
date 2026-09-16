@@ -33,6 +33,10 @@ Episode 4
 Prompt: Write the failing table-driven tests for rb_delete first: red leaf, black leaf with red sibling, node with two children, root deletion, a black node with exactly one (red) child, and the mirrored variants. Each case asserts rb_validate and rb_size afterward. Don’t touch rbtree.c yet Run make test and show me the failures.
 Notes: This prompt was out of the spec. Some key things it told me was that rbnode is fully opaque outside and that there was no way for test code to inspect node color or shape directly so hitting a specific strucutral case meant picking the right insertion order for rb_insert. It gave me some steps and started with step 1 which was to verify the mirror tree shape empirically.
 
+episode 5
+Prompt: Lets start working on the last parts of m2. Walk me through your implementation and how it connects to the other steps of m2. 
+Notes: I wanted to see if there were any glaring issues that I wasn't seeing or any edge cases that weren't being covered. I looked through my code and I didn't see anything wrong. I ask
+
 PROMPTLOG.md: 4–6 annotated episodes, each with the prompt, what came back, and your
 judgment (accepted, rejected, or pushed back on, and why). Must include one plan you revised(done)
 (Step 3), one rejected/oversized diff(done) (Step 4), one tool-output debugging loop (Step 5), and one review finding you triaged (Step 7). Raw transcript dumps here score nothing; annotation is the

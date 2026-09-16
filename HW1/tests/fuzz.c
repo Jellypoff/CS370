@@ -1,5 +1,5 @@
-/* Random inserts/finds checked against a reference model. No deletes yet
- * (that lands in M2). Usage: fuzz <op-count> [seed] */
+/* Random inserts/finds/deletes checked against a reference model.
+ * Usage: fuzz <op-count> [seed] */
 #include "rbtree.h"
 
 #include <assert.h>
@@ -60,8 +60,9 @@ int main(int argc, char **argv)
 	 * for every pool key touched so far */
 	for (long op = 0; op < ops; op++) {
 		int i = rand() % POOL_SIZE;
+		int op_kind = rand() % 3;
 
-		if (rand() % 2 == 0) {
+		if (op_kind == 0) {
 			int v = rand();
 			int *heap_v = malloc(sizeof *heap_v);
 			assert(heap_v != NULL);
@@ -69,13 +70,21 @@ int main(int argc, char **argv)
 			assert(rb_insert(t, pool_keys[i], heap_v) == 0);
 			model_present[i] = 1;
 			model_value[i] = v;
-		} else {
+		} else if (op_kind == 1) {
 			void *found = rb_find(t, pool_keys[i]);
 			if (model_present[i]) {
 				assert(found != NULL);
 				assert(*(int *)found == model_value[i]);
 			} else {
 				assert(found == NULL);
+			}
+		} else {
+			int rc = rb_delete(t, pool_keys[i]);
+			if (model_present[i]) {
+				assert(rc == 0);
+				model_present[i] = 0;
+			} else {
+				assert(rc == -1);
 			}
 		}
 
