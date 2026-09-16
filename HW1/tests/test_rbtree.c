@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 static int free_count = 0;
 
@@ -246,6 +247,102 @@ static void test_validate_ascending_run(void)
 	printf("test_validate_ascending_run passed\n");
 }
 
+static void count_keys_cb(const char *key, void *value, void *ctx)
+{
+	(void)key;
+	(void)value;
+	(*(int *)ctx)++;
+}
+
+static void test_foreach_empty(void)
+{
+	rbtree_t *t = rb_create(NULL);
+	assert(t != NULL);
+
+	int count = 0;
+	rb_foreach(t, count_keys_cb, &count);
+	assert(count == 0);
+
+	rb_destroy(t);
+	printf("test_foreach_empty passed\n");
+}
+
+typedef struct {
+	const char *keys[16];
+	int count;
+} foreach_keys_ctx_t;
+
+static void collect_keys_cb(const char *key, void *value, void *ctx)
+{
+	(void)value;
+	foreach_keys_ctx_t *c = ctx;
+	c->keys[c->count++] = key;
+}
+
+static void test_foreach_inorder(void)
+{
+	rbtree_t *t = rb_create(count_free);
+	assert(t != NULL);
+
+	const char *keys[] = { "m", "d", "z", "a", "f", "y", "b" };
+	size_t n = sizeof keys / sizeof keys[0];
+	for (size_t i = 0; i < n; i++) {
+		assert(rb_insert(t, keys[i], make_int((int)i)) == 0);
+	}
+
+	foreach_keys_ctx_t ctx = { .count = 0 };
+	rb_foreach(t, collect_keys_cb, &ctx);
+
+	assert((size_t)ctx.count == n);
+	assert((size_t)ctx.count == rb_size(t));
+	/* invariant: keys collected so far are in strictly increasing order */
+	for (int i = 1; i < ctx.count; i++) {
+		assert(strcmp(ctx.keys[i - 1], ctx.keys[i]) < 0);
+	}
+
+	rb_destroy(t);
+	printf("test_foreach_inorder passed\n");
+}
+
+typedef struct {
+	const char *key;
+	int value;
+} kv_pair_t;
+
+typedef struct {
+	kv_pair_t pairs[16];
+	int count;
+} foreach_kv_ctx_t;
+
+static void collect_kv_cb(const char *key, void *value, void *ctx)
+{
+	foreach_kv_ctx_t *c = ctx;
+	c->pairs[c->count].key = key;
+	c->pairs[c->count].value = *(int *)value;
+	c->count++;
+}
+
+static void test_foreach_values(void)
+{
+	rbtree_t *t = rb_create(count_free);
+	assert(t != NULL);
+
+	assert(rb_insert(t, "beta", make_int(20)) == 0);
+	assert(rb_insert(t, "alpha", make_int(10)) == 0);
+	assert(rb_insert(t, "gamma", make_int(30)) == 0);
+
+	foreach_kv_ctx_t ctx = { .count = 0 };
+	rb_foreach(t, collect_kv_cb, &ctx);
+
+	assert(ctx.count == 3);
+	assert(strcmp(ctx.pairs[0].key, "alpha") == 0 && ctx.pairs[0].value == 10);
+	assert(strcmp(ctx.pairs[1].key, "beta") == 0 && ctx.pairs[1].value == 20);
+	assert(strcmp(ctx.pairs[2].key, "gamma") == 0 && ctx.pairs[2].value == 30);
+
+	rb_destroy(t);
+	printf("test_foreach_values passed\n");
+}
+
 int main(void)
 {
 	test_create_destroy();
@@ -261,6 +358,9 @@ int main(void)
 	test_validate_single_insert();
 	test_validate_after_rotations();
 	test_validate_ascending_run();
+	test_foreach_empty();
+	test_foreach_inorder();
+	test_foreach_values();
 	printf("All tests passed\n");
 	return 0;
 }

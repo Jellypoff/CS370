@@ -23,3 +23,14 @@ Claude asked me how I wanted to do tests. It asked me if I wanted to use whitebo
 
 Prompt: Start working on insert_fixup + mirrors and validate checks black-height. insert_fixup was already implemented but update it with mirrors now. Build on what is in rbtree.c and in the tests directory.
 Notes: I was a little confused on what mirror meant but Claude explained this as handling mirror branches when a parent is a left or right child. Claude caught this and asked me if I just wanted to work on rb_validate and I said yes. After it finished its plan with rb_validate, I asked Claude to walk me through its implementation so I could understand how its actually validating in C. I wanted to be thorough with rb_validate and I had in my notes that rb_validate needed to maintain parent pointers and make sure that the rotation keeps track of t-> root. This was a little bit of a backtrack but it wasn't too costly this time. Claude then explained what the spec meant by maintain and I understood this better. rb_validate is just a diagnostic pass and returns 0 of every invariant holds, and 1 if not or if there is a violation. It also confirmed that rotation already correctly updates t->root because when the node that is being rotate has no parent, it is the root.
+
+Episode 3
+Prompt: Lets start working on the last bit for M1. Build on rbtree.c and the tests directory. Complete the rb_foreach method + in-order tests;fuzzer (inserts/finds) vs model. Walk me through your implementation.
+
+Notes:I sent this a bit too fast. I should've asked it to walk me through the fuzzer because I'm still fuzzy on its implementation. Claude gave good clarification on the fuzzer and that was sufficient. This was the end of M1 and all the tests passed. I asked Claude to run the tests and to show me output after the end of this.
+
+PROMPTLOG.md: 4–6 annotated episodes, each with the prompt, what came back, and your
+judgment (accepted, rejected, or pushed back on, and why). Must include one plan you revised
+(Step 3), one rejected/oversized diff (Step 4), one tool-output debugging loop (Step 5), and one
+review finding you triaged (Step 7). Raw transcript dumps here score nothing; annotation is the
+deliverable.

@@ -258,6 +258,24 @@ int rb_validate(const rbtree_t *t)
 	return rb_validate_rec(t, t->root, NULL, NULL, &black_height) ? 0 : 1;
 }
 
+static void rb_foreach_rec(const rbtree_t *t, const rbnode_t *node,
+			    void (*fn)(const char *key, void *value, void *ctx),
+			    void *ctx)
+{
+	if (node == &t->nil) {
+		return;
+	}
+	rb_foreach_rec(t, node->left, fn, ctx);
+	fn(node->key, node->value, ctx);
+	rb_foreach_rec(t, node->right, fn, ctx);
+}
+
+void rb_foreach(const rbtree_t *t, void (*fn)(const char *key, void *value, void *ctx),
+		 void *ctx)
+{
+	rb_foreach_rec(t, t->root, fn, ctx);
+}
+
 static void free_subtree(rbtree_t *t, rbnode_t *node)
 {
 	if (node == &t->nil) {
