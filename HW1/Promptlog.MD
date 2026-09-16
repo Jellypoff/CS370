@@ -27,10 +27,13 @@ Notes: I was a little confused on what mirror meant but Claude explained this as
 Episode 3
 Prompt: Lets start working on the last bit for M1. Build on rbtree.c and the tests directory. Complete the rb_foreach method + in-order tests;fuzzer (inserts/finds) vs model. Walk me through your implementation.
 
-Notes:I sent this a bit too fast. I should've asked it to walk me through the fuzzer because I'm still fuzzy on its implementation. Claude gave good clarification on the fuzzer and that was sufficient. This was the end of M1 and all the tests passed. I asked Claude to run the tests and to show me output after the end of this.
+Notes:I sent this a bit too fast. I should've asked it to walk me through the fuzzer because I'm still fuzzy on its implementation. Claude gave good clarification on the fuzzer and that was sufficient. This was the end of M1 and all the tests passed. I asked Claude to run the tests and to show me output after the end of this, and it did. I have also been running the tests throughout each commit to make sure it works on my end as well.
+
+Episode 4
+Prompt: Write the failing table-driven tests for rb_delete first: red leaf, black leaf with red sibling, node with two children, root deletion, a black node with exactly one (red) child, and the mirrored variants. Each case asserts rb_validate and rb_size afterward. Don’t touch rbtree.c yet Run make test and show me the failures.
+Notes: This prompt was out of the spec. Some key things it told me was that rbnode is fully opaque outside and that there was no way for test code to inspect node color or shape directly so hitting a specific strucutral case meant picking the right insertion order for rb_insert. It gave me some steps and started with step 1 which was to verify the mirror tree shape empirically.
 
 PROMPTLOG.md: 4–6 annotated episodes, each with the prompt, what came back, and your
-judgment (accepted, rejected, or pushed back on, and why). Must include one plan you revised
-(Step 3), one rejected/oversized diff (Step 4), one tool-output debugging loop (Step 5), and one
-review finding you triaged (Step 7). Raw transcript dumps here score nothing; annotation is the
+judgment (accepted, rejected, or pushed back on, and why). Must include one plan you revised(done)
+(Step 3), one rejected/oversized diff(done) (Step 4), one tool-output debugging loop (Step 5), and one review finding you triaged (Step 7). Raw transcript dumps here score nothing; annotation is the
 deliverable.

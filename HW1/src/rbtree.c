@@ -207,6 +207,137 @@ void *rb_find(const rbtree_t *t, const char *key)
 	return NULL;
 }
 
+static void rb_transplant(rbtree_t *t, rbnode_t *u, rbnode_t *v)
+{
+	if (u->parent == &t->nil) {
+		t->root = v;
+	} else if (u == u->parent->left) {
+		u->parent->left = v;
+	} else {
+		u->parent->right = v;
+	}
+	v->parent = u->parent;
+}
+
+static void rb_delete_fixup(rbtree_t *t, rbnode_t *x)
+{
+	/* invariant: x carries an extra unit of black-height that its subtree's
+	 * shape doesn't reflect; each iteration either discharges it (rotation)
+	 * or pushes it one level up toward the root */
+	while (x != t->root && x->color == RB_BLACK) {
+		if (x == x->parent->left) {
+			rbnode_t *w = x->parent->right;
+			if (w->color == RB_RED) {
+				w->color = RB_BLACK;
+				x->parent->color = RB_RED;
+				rb_rotate_left(t, x->parent);
+				w = x->parent->right;
+			}
+			if (w->left->color == RB_BLACK && w->right->color == RB_BLACK) {
+				w->color = RB_RED;
+				x = x->parent;
+			} else {
+				if (w->right->color == RB_BLACK) {
+					w->left->color = RB_BLACK;
+					w->color = RB_RED;
+					rb_rotate_right(t, w);
+					w = x->parent->right;
+				}
+				w->color = x->parent->color;
+				x->parent->color = RB_BLACK;
+				w->right->color = RB_BLACK;
+				rb_rotate_left(t, x->parent);
+				x = t->root;
+			}
+		} else {
+			rbnode_t *w = x->parent->left;
+			if (w->color == RB_RED) {
+				w->color = RB_BLACK;
+				x->parent->color = RB_RED;
+				rb_rotate_right(t, x->parent);
+				w = x->parent->left;
+			}
+			if (w->right->color == RB_BLACK && w->left->color == RB_BLACK) {
+				w->color = RB_RED;
+				x = x->parent;
+			} else {
+				if (w->left->color == RB_BLACK) {
+					w->right->color = RB_BLACK;
+					w->color = RB_RED;
+					rb_rotate_left(t, w);
+					w = x->parent->left;
+				}
+				w->color = x->parent->color;
+				x->parent->color = RB_BLACK;
+				w->left->color = RB_BLACK;
+				rb_rotate_right(t, x->parent);
+				x = t->root;
+			}
+		}
+	}
+	x->color = RB_BLACK;
+}
+
+int rb_delete(rbtree_t *t, const char *key)
+{
+	rbnode_t *z = t->root;
+
+	/* invariant: z is the still-unsearched subtree that may contain key */
+	while (z != &t->nil) {
+		int cmp = strcmp(key, z->key);
+		if (cmp == 0) {
+			break;
+		}
+		z = (cmp < 0) ? z->left : z->right;
+	}
+	if (z == &t->nil) {
+		return -1;
+	}
+
+	rbnode_t *y = z;
+	rb_color_t y_original_color = y->color;
+	rbnode_t *x;
+
+	if (z->left == &t->nil) {
+		x = z->right;
+		rb_transplant(t, z, z->right);
+	} else if (z->right == &t->nil) {
+		x = z->left;
+		rb_transplant(t, z, z->left);
+	} else {
+		y = z->right;
+		/* invariant: y is the still-unsearched left spine of z->right */
+		while (y->left != &t->nil) {
+			y = y->left;
+		}
+		y_original_color = y->color;
+		x = y->right;
+		if (y->parent == z) {
+			x->parent = y;
+		} else {
+			rb_transplant(t, y, y->right);
+			y->right = z->right;
+			y->right->parent = y;
+		}
+		rb_transplant(t, z, y);
+		y->left = z->left;
+		y->left->parent = y;
+		y->color = z->color;
+	}
+
+	if (y_original_color == RB_BLACK) {
+		rb_delete_fixup(t, x);
+	}
+
+	if (t->value_free != NULL && z->value != NULL) {
+		t->value_free(z->value);
+	}
+	free(z->key);
+	free(z);
+	t->size--;
+	return 0;
+}
+
 size_t rb_size(const rbtree_t *t)
 {
 	return t->size;

@@ -343,6 +343,84 @@ static void test_foreach_values(void)
 	printf("test_foreach_values passed\n");
 }
 
+typedef struct {
+	const char *name;
+	const char *insert_order[8];
+	size_t insert_count;
+	const char *delete_key;
+} delete_case_t;
+
+static const delete_case_t delete_cases[] = {
+	/* red leaf: no fixup needed at all -- simplest possible delete. */
+	{ "red_leaf_left",  { "b", "a", "c" }, 3, "a" },
+	{ "red_leaf_right", { "b", "a", "c" }, 3, "c" },
+
+	/* root deletion, trivial: tree becomes empty. */
+	{ "root_only_node", { "only" }, 1, "only" },
+
+	/* root deletion + two children, successor is NOT the direct right
+	 * child (b's successor is c, found two levels down via d->left). */
+	{ "two_children_root_deep_successor",
+	  { "a", "b", "c", "d", "e", "f" }, 6, "b" },
+
+	/* two children, successor IS the direct right child (d's successor
+	 * is e itself), exercising the y == z->right transplant edge case. */
+	{ "two_children_direct_successor",
+	  { "a", "b", "c", "d", "e", "f" }, 6, "d" },
+
+	/* black leaf (a) whose sibling (d) is red -- the sibling-red
+	 * delete-fixup entry case, and its mirror (sibling on the left). */
+	{ "black_leaf_red_sibling",        { "a", "b", "c", "d", "e", "f" }, 6, "a" },
+	{ "black_leaf_red_sibling_mirror", { "f", "e", "d", "c", "b", "a" }, 6, "f" },
+
+	/* black node with exactly one red child -- simple splice, and its
+	 * mirror (red child on the left instead of the right). */
+	{ "black_one_red_child_right",       { "a", "b", "c", "d", "e", "f" }, 6, "e" },
+	{ "black_one_red_child_left_mirror", { "f", "e", "d", "c", "b", "a" }, 6, "b" },
+};
+
+static void test_delete_cases(void)
+{
+	size_t n = sizeof delete_cases / sizeof delete_cases[0];
+
+	/* invariant: every case in delete_cases so far has left the tree
+	 * valid and correctly sized before moving to the next case */
+	for (size_t i = 0; i < n; i++) {
+		const delete_case_t *tc = &delete_cases[i];
+		rbtree_t *t = rb_create(count_free);
+		assert(t != NULL);
+
+		for (size_t k = 0; k < tc->insert_count; k++) {
+			assert(rb_insert(t, tc->insert_order[k], make_int((int)k)) == 0);
+		}
+		assert(rb_validate(t) == 0);
+
+		free_count = 0;
+		assert(rb_delete(t, tc->delete_key) == 0);
+		assert(free_count == 1);
+		assert(rb_size(t) == tc->insert_count - 1);
+		assert(rb_validate(t) == 0);
+		assert(rb_find(t, tc->delete_key) == NULL);
+
+		for (size_t k = 0; k < tc->insert_count; k++) {
+			if (strcmp(tc->insert_order[k], tc->delete_key) == 0) {
+				continue;
+			}
+			assert(rb_find(t, tc->insert_order[k]) != NULL);
+		}
+
+		foreach_keys_ctx_t ctx = { .count = 0 };
+		rb_foreach(t, collect_keys_cb, &ctx);
+		assert((size_t)ctx.count == rb_size(t));
+		for (int k = 1; k < ctx.count; k++) {
+			assert(strcmp(ctx.keys[k - 1], ctx.keys[k]) < 0);
+		}
+
+		rb_destroy(t);
+		printf("test_delete_cases[%s] passed\n", tc->name);
+	}
+}
+
 int main(void)
 {
 	test_create_destroy();
@@ -361,6 +439,7 @@ int main(void)
 	test_foreach_empty();
 	test_foreach_inorder();
 	test_foreach_values();
+	test_delete_cases();
 	printf("All tests passed\n");
 	return 0;
 }
