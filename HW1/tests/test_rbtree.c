@@ -79,9 +79,18 @@ static void test_overwrite(void)
 	assert(rb_size(t) == 1);
 	assert(free_count == 1);
 	assert(*(int *)rb_find(t, "key") == 20);
+	assert(rb_validate(t) == 0);
+
+	/* M3: overwrite-only-key -- repeated overwrites of the sole key in the
+	 * tree must keep freeing exactly the old value, never touching size. */
+	assert(rb_insert(t, "key", make_int(30)) == 0);
+	assert(rb_size(t) == 1);
+	assert(free_count == 2);
+	assert(*(int *)rb_find(t, "key") == 30);
+	assert(rb_validate(t) == 0);
 
 	rb_destroy(t);
-	assert(free_count == 2);
+	assert(free_count == 3);
 	printf("test_overwrite passed\n");
 }
 
@@ -421,6 +430,96 @@ static void test_delete_cases(void)
 	}
 }
 
+/* M3 edge cases: empty tree, single-node tree, overwrite-only-key. */
+
+static void test_delete_empty_tree(void)
+{
+	rbtree_t *t = rb_create(count_free);
+	assert(t != NULL);
+
+	assert(rb_delete(t, "missing") == -1);
+	assert(rb_size(t) == 0);
+	assert(rb_validate(t) == 0);
+
+	rb_destroy(t);
+	printf("test_delete_empty_tree passed\n");
+}
+
+static void test_find_empty_tree(void)
+{
+	rbtree_t *t = rb_create(count_free);
+	assert(t != NULL);
+
+	assert(rb_find(t, "missing") == NULL);
+	assert(rb_find(t, "") == NULL);
+
+	rb_destroy(t);
+	printf("test_find_empty_tree passed\n");
+}
+
+static void test_empty_after_deletes(void)
+{
+	rbtree_t *t = rb_create(count_free);
+	assert(t != NULL);
+	free_count = 0;
+
+	const char *keys[] = { "m", "d", "z", "a", "f", "y" };
+	size_t n = sizeof keys / sizeof keys[0];
+	for (size_t i = 0; i < n; i++) {
+		assert(rb_insert(t, keys[i], make_int((int)i)) == 0);
+	}
+	assert(rb_validate(t) == 0);
+
+	/* delete in an order that isn't reverse-insertion, so the tree passes
+	 * through non-trivial shapes on its way back to empty */
+	const char *delete_order[] = { "d", "y", "m", "a", "z", "f" };
+
+	/* invariant: after each delete so far, the tree is still valid */
+	for (size_t i = 0; i < n; i++) {
+		assert(rb_delete(t, delete_order[i]) == 0);
+		assert(rb_validate(t) == 0);
+	}
+
+	assert(rb_size(t) == 0);
+	for (size_t i = 0; i < n; i++) {
+		assert(rb_find(t, keys[i]) == NULL);
+	}
+
+	int count = 0;
+	rb_foreach(t, count_keys_cb, &count);
+	assert(count == 0);
+
+	rb_destroy(t);
+	assert(free_count == (int)n);
+	printf("test_empty_after_deletes passed\n");
+}
+
+static void test_single_node_lifecycle(void)
+{
+	rbtree_t *t = rb_create(count_free);
+	assert(t != NULL);
+	free_count = 0;
+
+	assert(rb_insert(t, "only", make_int(42)) == 0);
+	assert(rb_size(t) == 1);
+	assert(*(int *)rb_find(t, "only") == 42);
+	assert(rb_validate(t) == 0);
+
+	foreach_kv_ctx_t ctx = { .count = 0 };
+	rb_foreach(t, collect_kv_cb, &ctx);
+	assert(ctx.count == 1);
+	assert(strcmp(ctx.pairs[0].key, "only") == 0 && ctx.pairs[0].value == 42);
+
+	assert(rb_delete(t, "only") == 0);
+	assert(free_count == 1);
+	assert(rb_size(t) == 0);
+	assert(rb_find(t, "only") == NULL);
+	assert(rb_validate(t) == 0);
+
+	rb_destroy(t);
+	printf("test_single_node_lifecycle passed\n");
+}
+
 int main(void)
 {
 	test_create_destroy();
@@ -440,6 +539,10 @@ int main(void)
 	test_foreach_inorder();
 	test_foreach_values();
 	test_delete_cases();
+	test_delete_empty_tree();
+	test_find_empty_tree();
+	test_empty_after_deletes();
+	test_single_node_lifecycle();
 	printf("All tests passed\n");
 	return 0;
 }

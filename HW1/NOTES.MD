@@ -26,7 +26,18 @@ M2: fuzzer with deletes, 1e5 ops, asan+memcheck clean
 M3: edge cases: empty tree, single node, overwrite-only-key
 M3: post-review fixes from adversarial pass (1 real, 1 rejected)
 docs: PROMPTLOG episodes 1-5 annotated, REFLECTION drafted
-
+Check that the tests cover:
+   - empty tree
+   - single-node tree
+   - deleting the only node and returning to an empty tree
+   - overwriting the only existing key
+   - rb_size remaining correct
+   - rb_find returning the expected value
+   - rb_validate remaining valid
+   - rb_destroy working on an empty tree
+   - the old value being freed exactly once during overwrite
+   - the replacement value being freed exactly once during destruction
+Check that the ownership/free-count helper is test-local and does not modify src/rbtree.c.Run the relevant test suite. Show me the actual test output, including any failures. If all tests pass, do not change production code yet. Explain whether these tests are capable of catching an incorrect implementation of the M3 edge cases.
 
 Required Functions
 M1
@@ -99,7 +110,3 @@ file:line; do not fix anything.
 
 Confusions list:
 Read include /rbtree.h and CLAUDE.md. Walk me through a left rotation, one pointer assignment at a time. For each pointer, explain what it pointed to before and after.
-
-
-Promptlog checklist
-- 
